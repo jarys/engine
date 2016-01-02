@@ -1,0 +1,20 @@
+Toto je engine plus priklad, jak na nem stavet.
+
+ovladaní A a D
+
+main.py je hlavní vlakno, které vloží do hry obsah a poté ji spustí, je to vlastně launcher
+	-každý takový objekt by měl mít metody add() a remove()
+	-svet je ze zacatku zcela prazdny, pridavany jsou entity, ale i pravidla, podle kterych se budou chovat jak ony, tak svet sám o sobě
+	-je dosti diskutabilní, co dát entitě jako vruzené pravidlo
+
+game.py je engine, je zde ulozeno mnoho promnenych, jako seznamy ruznych entit, cas, mapa kláves
+	-renders je list entit na vykreslení, polozky v ní musí mít metodu render(cx, cy), kde cx, cy je pozice kamery (do budoucna)
+	-updates je list entit na updatovaní, polozky musí mí metodu update(dt) kde dt je cas uplynuly od posledního updatu
+
+food.py a player.py jsou entity
+
+rule_eat.py a rule_generate_food.py jsou pravidla
+
+primitives není moje práce, je to modul pro vykreslení základních tvarů v pygletu pomocí opengl
+
+kod je hezky čistý a snad sebedokumentujici
