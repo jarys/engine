@@ -19,7 +19,7 @@ class AddEvent(Event):
 
 	def evaluate(self):
 		self.entity.init()
-		game.entities[self.entity.ii] = self.entity
+		game.entities[self.entity.iid] = self.entity
 
 class RemoveEvent(Event):
 	def __init__(self, entity):
@@ -27,4 +27,4 @@ class RemoveEvent(Event):
 
 	def evaluate(self):
 		self.entity.outit()
-		del game.entities[self.entity.ii]
+		del game.entities[self.entity.iid]

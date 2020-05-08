@@ -2,8 +2,8 @@ import client, server
 import threading
 
 s = server.Server()
-s.connect('localhost', 8888)
-threading.Thread(target=s.serve_forever).start()
+s.connect(('', 8888))
+s.start()
 
 c = client.Client()
-c.connect('localhost', 8888)
+c.connect(('', 8888))

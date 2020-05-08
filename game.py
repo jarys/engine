@@ -7,28 +7,27 @@ import sys
 from engine.physics import Vec2
 game = sys.modules[__name__]
 
-def init(client=None, world=None):
-	game.entities = {}
-	game.groups = {}
-	game.events = []
-	game.time = 0
+game.entities = {}
+game.groups = {}
+game.events = []
+game.time = 0
 
-	game.low_ii = 100
-	game.medium_ii = 1000
-	game.high_ii = 1000000
-	game.reserved_ii = {
-		'camera': 5
-	}
+game.low_ii = 100
+game.medium_ii = 1000
+game.high_ii = 1000000
+game.reserved_ii = {
+	'camera': 5
+}
 
-	game.mouse = Vec2(0, 0)
+game.mouse = Vec2(0, 0)
 
-	game.window = None
-	game.keys = None
+game.window = None
+game.keys = None
 
-	game.client = client
-	game.world = world
+game.running = False
 
-	game.running = False
+game.world = None
+game.client = None
 
 def loop(dt):
 	#print('tick')
@@ -68,7 +67,8 @@ def start():
 		game.mouse.y = y
 
 	if game.client:
-		game.client.init()
+		game.client.connect()
+		game.client.start()
 
 	pyglet.clock.schedule_interval(game.loop, 1/120.0)
 	game.running = True
@@ -76,7 +76,7 @@ def start():
 	game.running = False
 
 	if game.client:
-		game.client.quit()
+		game.client.close()
 
 
 def get_ii():

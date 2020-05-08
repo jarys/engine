@@ -2,10 +2,7 @@ import engine.game as game
 from engine.event import AddEvent, RemoveEvent
 
 class Entity:
-	def __init__(self):
-		self.ii = self.generate_ii()
-
-	def generate_ii(self):
+	def generate_iid(self):
 		return game.get_ii()
 
 	def init(self):
@@ -21,8 +18,8 @@ class Entity:
 		pass
 
 	def add(self):
+		self.iid = self.generate_iid()
 		AddEvent(self).add()
 
 	def remove(self):
 		RemoveEvent(self).add()
-

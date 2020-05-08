@@ -1,65 +1,68 @@
-import socket,select,sys,time
-import protocol
+import socket,select,sys,time,threading,pickle,struct
+from engine.net import protocol
 	
 class Server():
 	def __init__(self):
 		self.sending_socket = None
+		self.running = False
 
-	def input_func(self, sock, host, port, address):
-		pass
+	def connect_func(self,sock,address):
+		self.log("sucessfully bound to", address)
 
-	def output_func(self, sock, host, port, address):
-		pass
+	def client_connect_func(self,sock,address):
+		self.log("client connected from", address)
 
-	def connect_func(self, sock, host, port):
-		print('[SERVER]: sucessfully bind')
+	def client_disconnect_func(self,sock,address):
+		self.log("disconnecting client from", address)
 
-	def client_connect_func(self, sock, host, port, address):
-		print("[SERVER]: client connected from", host)
-
-	def client_disconnect_func(self, sock, host, port, address):
-		print("[SERVER]: disconnecting client from", host)
-
-	def quit_func(self, host, port):
-		print('[SERVER]: server terminated')
+	def close_func(self):
+		self.log("server terminated")
 		
-	def connect(self, host, port):
-		self.host = host
-		self.port = port
+	def connect(self, address=("",8888)):
+		self.address = address
 		try:
 			self.unconnected_socket = socket.socket()
-			self.unconnected_socket.bind((self.host, self.port))
-			self.unconnected_socket.listen(5)
-			self.connect_func(self.unconnected_socket, self.host,self.port)
+			self.unconnected_socket.bind(self.address)
+			self.unconnected_socket.listen()
+			self.connect_func(self.unconnected_socket, address)
 		except:
 			self.unconnected_socket.close()
 			raise
 		self.connected_sockets = []
-		self.socketaddresses = {}
+		self.socket_addresses = {}
 
 	def remove_socket(self, sock):
-		address = self.socketaddresses[sock]
-		self.client_disconnect_func(sock, self.host, self.port, address)
-		self.connected_sockets.remove(sock)
+		self.client_disconnect_func(sock, address)
+		try:
+			address = self.socket_addresses[sock]
+			self.connected_sockets.remove(sock)
+			del self.socket_addresses[sock]
+		except KeyError:
+			pass
 
 	def serve_forever(self):
-		self.looping = True
-		while self.looping:
-			input_ready, output_ready, except_ready = select.select([self.unconnected_socket]+self.connected_sockets,[],[])
+		while self.running:
+			input_ready, output_ready, except_ready = select.select(
+				[self.unconnected_socket]+self.connected_sockets,[],[])
 			for sock in input_ready:
 				if sock == self.unconnected_socket:
 					#init socket
 					connected_socket, address = sock.accept()
 					self.connected_sockets.append(connected_socket)
-					self.socketaddresses[connected_socket] = address
-					self.client_connect_func(connected_socket, self.host, self.port, address)
+					self.socket_addresses[connected_socket] = address
+					self.client_connect_func(connected_socket, address)
 				else:
 					try:
 						data = protocol.recv(sock)
-						address = self.socketaddresses[sock]
-						self.input_func(sock, self.host, self.port, address)
-					except:
-						data = b"client quit"
+						address = self.socket_addresses[sock]
+					except (ValueError, pickle.UnpicklingError, struct.error):
+						self.log("wrong packet format")
+					except AttributeError:
+						self.log("unknown class in pickle data")
+					except (BrokenPipeError,ConnectionResetError):
+						self.log("broken pipe")
+						self.remove_socket(sock)
+
 					if data:
 						if data == b"client quit":
 							self.remove_socket(sock)
@@ -68,34 +71,54 @@ class Server():
 							self.handle_data(data)
 					
 	def handle_data(self, data):
-		#print("SERVER:", data)
+		self.log("received:", data)
 		#self.send_data_to_all(data)
-		pass
+		#pass
 
-	def send_data(self, data):
+	def respond(self, data):
 		try:
 			protocol.send(self.sending_socket, data)
-			address = self.socketaddresses[self.sending_socket]
-			self.output_func(self.sending_socket,self.host,self.port,address)
+			address = self.socket_addresses[self.sending_socket]
 		except:
 			self.remove_socket(self.sending_socket)
 
-	def send_data_to_all(self, data):
+	def broadcast(self, data):
 		for socket in self.connected_sockets:
 			try:
 				protocol.send(socket, data)
-				address = self.socketaddresses[socket]
-				self.output_func(socket,self.host,self.port,address)
+				address = self.socket_addresses[socket]
 			except:
 				self.remove_socket(socket)
 
-	def quit(self):
+	def close(self):
 		for socket in self.connected_sockets:
 			socket.close()
 
 		self.unconnected_socket.close()
+		self.running = False
+		self.close_func()
 
-		self.quit_func(self.host, self.port)
+	def log(self, *args, **kwargs):
+		print("[SERVER]", *args, **kwargs)
 
-	def stop(self):
-		self.looping = False
+	def start(self):
+		self.running = True
+		threading.Thread(target=self.serve_forever).start()
+
+class BroadcastServer(Server):
+	def handle_data(self, data):
+		self.broadcast(data)
+
+if __name__ == "__main__":
+	s = BroadcastServer()
+	s.connect(("",8888))
+	s.start()
+
+	while True:
+		try:
+			time.sleep(.5)
+		except KeyboardInterrupt:
+			break
+
+	s.close()
+
