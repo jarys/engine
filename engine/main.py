@@ -50,7 +50,6 @@ class RuleClick(Entity):
             gx, gy = hexgrid.grid(*pos, 50)
             x, y = hexgrid.pos(gx, gy, 50)
             Circle((x, y), 50, color=4*(.7,)).add()
-        event = True
 
 RuleClick().add()
 
